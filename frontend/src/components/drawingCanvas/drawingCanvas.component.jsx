@@ -5,9 +5,15 @@ import * as tf from "@tensorflow/tfjs"
 
 // set model
 const modelURL = `${process.env.REACT_APP_URL}/converted/model/model.json`;
+// const modelURL = `${process.env.REACT_APP_URL}/converted2/model.json`;
 console.log(modelURL)
 const model = await tf.loadLayersModel(modelURL)
 const modelInputShape = [28, 28];
+
+
+
+// const ds = await MNISTDataset.create()
+// console.log(ds);
 
 const DrawingCanvas = () => {
 
@@ -21,6 +27,9 @@ const DrawingCanvas = () => {
 	const borderThickness = 1;
 	const canvas2Window = 0.5;
 	const lineWidth = 40;
+
+	// test model
+	// model.evaluate(x, y);
 
 
 
@@ -97,7 +106,7 @@ const DrawingCanvas = () => {
 		for (let y = 0; y < modelInputShape[0]; y++) {
 			for (let x = 0; x < modelInputShape[1]; x++) {
 				newBuffer.set(1 - buffer.get(y, x, 0) / 255.0, 0, y, x);
-				// newBuffer2.set(1 - buffer.get(y, x, 0) / 255.0, y, x, 0)
+				newBuffer2.set(1 - buffer.get(y, x, 0) / 255.0, y, x, 0)
 			}
 		}
 		// console.log(newBuffer);
