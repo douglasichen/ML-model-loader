@@ -15,6 +15,49 @@ const modelInputShape = [28, 28];
 // const ds = await MNISTDataset.create()
 // console.log(ds);
 
+// const dataURL = `${process.env.REACT_APP_URL}/MNIST data/mnist_test.csv`;
+// const dataURL = "https://pjreddie.com/media/files/mnist_test.csv"
+//https://pjreddie.com/media/files/mnist_train.csv
+// const data = tf.data.csv(
+// 	dataURL, {
+// 		columnConfigs: {
+// 			label: {
+// 				isLabel: true
+// 			}
+// 		}
+// 	});
+
+// const numOfFeatures = (await data.columnNames()).length - 1;
+
+// // Prepare the Dataset for training.
+// const flattenedDataset = data.map(({xs, ys}) => {
+// 	// Convert xs(features) and ys(labels) from object form (keyed by
+// 	// column name) to array form.
+// 	return {xs:Object.values(xs), ys:Object.values(ys)};
+// })
+// //.batch(10);
+
+// const it = await flattenedDataset.iterator()
+// const xs = []
+// const ys = []
+// // read only the data for the first 5 rows
+// // all the data need not to be read once 
+// // since it will consume a lot of memory
+// for (let i = 0; i < 5; i++) {
+// 	let e = await it.next()
+// 	xs.push(e.value.xs)
+// 	ys.push(e.value.ys)
+// }
+// const features = tf.tensor(xs)
+// const labels = tf.tensor(ys)
+
+// console.log(features.shape)
+// console.log(labels.shape)
+
+// model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+// const results = model.evaluate(features, labels)
+// console.log(results)
+
 const DrawingCanvas = () => {
 
 	const displayCanvasRef = useRef(null)
