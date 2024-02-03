@@ -4,8 +4,8 @@ import * as tf from "@tensorflow/tfjs"
 
 
 // set model
-const modelURL = `${process.env.REACT_APP_URL}/converted/model/model.json`;
-// const modelURL = `${process.env.REACT_APP_URL}/converted2/model.json`;
+// const modelURL = `${process.env.REACT_APP_URL}/converted/model/model.json`;
+const modelURL = `${process.env.REACT_APP_URL}/converted4/model.json`;
 console.log(modelURL)
 const model = await tf.loadLayersModel(modelURL)
 const modelInputShape = [28, 28];
@@ -15,48 +15,104 @@ const modelInputShape = [28, 28];
 // const ds = await MNISTDataset.create()
 // console.log(ds);
 
-// const dataURL = `${process.env.REACT_APP_URL}/MNIST data/mnist_test.csv`;
+const dataURL = `${process.env.REACT_APP_URL}/MNIST data/mnist_test.csv`;
 // const dataURL = "https://pjreddie.com/media/files/mnist_test.csv"
 //https://pjreddie.com/media/files/mnist_train.csv
-// const data = tf.data.csv(
-// 	dataURL, {
-// 		columnConfigs: {
-// 			label: {
-// 				isLabel: true
-// 			}
-// 		}
-// 	});
+const data = tf.data.csv(
+	dataURL, {
+		columnConfigs: {
+			label: {
+				isLabel: true
+			}
+		}
+	});
 
-// const numOfFeatures = (await data.columnNames()).length - 1;
+const numOfFeatures = (await data.columnNames()).length - 1;
 
-// // Prepare the Dataset for training.
-// const flattenedDataset = data.map(({xs, ys}) => {
-// 	// Convert xs(features) and ys(labels) from object form (keyed by
-// 	// column name) to array form.
-// 	return {xs:Object.values(xs), ys:Object.values(ys)};
-// })
-// //.batch(10);
+// Prepare the Dataset for training.
+const flattenedDataset = data.map(({xs, ys}) => {
+	// Convert xs(features) and ys(labels) from object form (keyed by
+	// column name) to array form.
+	return {xs:Object.values(xs), ys:Object.values(ys)};
+})
+//.batch(10);
 
-// const it = await flattenedDataset.iterator()
-// const xs = []
-// const ys = []
-// // read only the data for the first 5 rows
-// // all the data need not to be read once 
-// // since it will consume a lot of memory
-// for (let i = 0; i < 5; i++) {
-// 	let e = await it.next()
-// 	xs.push(e.value.xs)
-// 	ys.push(e.value.ys)
-// }
-// const features = tf.tensor(xs)
-// const labels = tf.tensor(ys)
+const it = await flattenedDataset.iterator()
+const xs = []
+const ys = []
+// read only the data for the first 5 rows
+// all the data need not to be read once 
+// since it will consume a lot of memory
+const N=10000
+for (let i = 0; i < N; i++) {
+	let e = await it.next()
+	xs.push(e.value.xs)
+	ys.push(e.value.ys)
+}
+const features = tf.tensor(xs)
+const labels = tf.tensor(ys)
 
-// console.log(features.shape)
-// console.log(labels.shape)
+const FB = tf.buffer(features.shape, features.dtype, features.dataSync());
+const newFB = tf.buffer([N,28,28], features.dtype);
+for (let t=0; t<N; t++) {
+	for (let x=0; x<28; x++) {
+		for (let y=0; y<28; y++) {
+			let val = FB.get(t,y*28+x)/255.0
+			newFB.set(val, t, y, x)
+		}
+	}
+}
 
-// model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-// const results = model.evaluate(features, labels)
-// console.log(results)
+const LB = tf.buffer(labels.shape, labels.dtype, labels.dataSync())
+const newLB = tf.buffer([N, 10], labels.dtype)
+for (let t=0; t<N; t++) {
+	for (let i=0; i<10; i++) {
+		let val = (i+1==LB.get(t,0) ? 1 : 0)
+		newLB.set(val, t, i)
+	}
+}
+
+const newFeatures = newFB.toTensor()
+const newLabels = newLB.toTensor()
+// console.log(newFeatures)
+// console.log(newLabels)
+
+const optimizer = tf.train.rmsprop(0.00000001);
+model.compile({optimizer: optimizer, loss: 'categoricalCrossentropy'});
+
+const argMax = (b) => {
+	let bestV = b.get(0, 0);
+	let bestI = 0;
+	for (let i = 1; i < b.shape[1]; i++) {
+		if (b.get(0, i) > bestV) {
+			bestV = b.get(0, i);
+			bestI = i;
+		}
+	}
+	return bestI;
+}
+
+const A = model.predict(newFeatures)
+const AB = tf.buffer(A.shape, A.dtype, A.dataSync())
+let gd=0
+for (let t=0; t<N; t++) {
+	let ans=0
+	let bestVal=AB.get(t,0)
+	for (let i=0; i<10; i++) {
+		let val = AB.get(t,i)
+		if (val>bestVal) {
+			ans=i
+			bestVal=val
+		}
+	}
+	if (ans==LB.get(t)) {
+		gd++
+	}
+}
+const acc=gd/N
+console.log(gd)
+console.log(N)
+console.log(acc)
 
 const DrawingCanvas = () => {
 
@@ -165,17 +221,7 @@ const DrawingCanvas = () => {
 		var res = model.predict(imageTensor)
 		res = tf.buffer([1, 10], res.dtype, res.dataSync());
 
-		const argMax = (b) => {
-			let bestV = b.get(0, 0);
-			let bestI = 0;
-			for (let i = 1; i < b.shape[1]; i++) {
-				if (b.get(0, i) > bestV) {
-					bestV = b.get(0, i);
-					bestI = i;
-				}
-			}
-			return bestI;
-		}
+		
 
 		await setResponse(argMax(res));
 	};
